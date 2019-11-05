@@ -81,6 +81,9 @@ public protocol Joinable: TableProtocol {
 	func join<NewType: Codable, KeyType: Equatable>(_ to: KeyPath<OverAllForm, [NewType]?>,
 													on: KeyPath<OverAllForm, KeyType>,
 													equals: KeyPath<NewType, KeyType>) throws -> Join<OverAllForm, Self, NewType, KeyType>
+	func join<NewType: Codable, KeyType: Equatable>(_ to: KeyPath<OverAllForm, [NewType]>,
+													on: KeyPath<OverAllForm, KeyType>,
+													equals: KeyPath<NewType, KeyType>) throws -> Join<OverAllForm, Self, NewType, KeyType>
 }
 
 public protocol Selectable: TableProtocol {
@@ -105,7 +108,13 @@ public extension Joinable {
 	func join<NewType: Codable, KeyType: Equatable>(_ to: KeyPath<OverAllForm, [NewType]?>,
 													on: KeyPath<OverAllForm, KeyType>,
 													equals: KeyPath<NewType, KeyType>) throws -> Join<OverAllForm, Self, NewType, KeyType> {
-		return .init(fromTable: self, to: to, on: on, equals: equals)
+		return .init(fromTable: self, to: .optional(to), on: on, equals: equals)
+	}
+
+	func join<NewType: Codable, KeyType: Equatable>(_ to: KeyPath<OverAllForm, [NewType]>,
+													on: KeyPath<OverAllForm, KeyType>,
+													equals: KeyPath<NewType, KeyType>) throws -> Join<OverAllForm, Self, NewType, KeyType> {
+		return .init(fromTable: self, to: .nonOptional(to), on: on, equals: equals)
 	}
 	
 	func join<NewType: Codable, Pivot: Codable, FirstKeyType: Equatable, SecondKeyType: Equatable>(
@@ -116,7 +125,18 @@ public extension Joinable {
 			and: KeyPath<NewType, SecondKeyType>,
 			is: KeyPath<Pivot, SecondKeyType>) throws -> JoinPivot<OverAllForm, Self, NewType, Pivot, FirstKeyType, SecondKeyType> {
 		
-		return .init(fromTable: self, to: to, on: on, equals: equals, and: and, alsoEquals: `is`)
+		return .init(fromTable: self, to: .optional(to), on: on, equals: equals, and: and, alsoEquals: `is`)
+	}
+
+	func join<NewType: Codable, Pivot: Codable, FirstKeyType: Equatable, SecondKeyType: Equatable>(
+			_ to: KeyPath<OverAllForm, [NewType]>,
+			with: Pivot.Type,
+			on: KeyPath<OverAllForm, FirstKeyType>,
+			equals: KeyPath<Pivot, FirstKeyType>,
+			and: KeyPath<NewType, SecondKeyType>,
+			is: KeyPath<Pivot, SecondKeyType>) throws -> JoinPivot<OverAllForm, Self, NewType, Pivot, FirstKeyType, SecondKeyType> {
+
+		return .init(fromTable: self, to: .nonOptional(to), on: on, equals: equals, and: and, alsoEquals: `is`)
 	}
 }
 

@@ -11,18 +11,32 @@ let joinPivotIdColumnName = "_crud_pivot_id_"
 
 let joinWord = "LEFT JOIN"
 
+public enum JoinKeyPath<OverAllForm: Codable, Form: Codable> {
+	case optional(KeyPath<OverAllForm, [Form]?>)
+	case nonOptional(KeyPath<OverAllForm, [Form]>)
+
+	func get() -> PartialKeyPath<OverAllForm> {
+        switch self {
+        case .optional(let path):
+            return path
+        case .nonOptional(let path):
+            return path
+        }
+    }
+}
+
 public struct Join<OAF: Codable, A: TableProtocol, B: Codable, O: Equatable>: TableProtocol, FromTableProtocol, Joinable, Selectable, Whereable, Orderable, Limitable {
 	public typealias Form = B
 	public typealias FromTableType = A
 	public typealias ComparisonType = O
 	public typealias OverAllForm = OAF
 	public let fromTable: FromTableType
-	let to: KeyPath<OverAllForm, [Form]?>
+	let to: JoinKeyPath<OverAllForm, Form>
 	let on: KeyPath<OverAllForm, ComparisonType>
 	let equals: KeyPath<Form, ComparisonType>
 	public func setState(state: inout SQLGenState) throws {
 		try fromTable.setState(state: &state)
-		try state.addTable(type: Form.self, joinData: .init(to: to, on: on, equals: equals, pivot: nil))
+		try state.addTable(type: Form.self, joinData: .init(to: to.get(), on: on, equals: equals, pivot: nil))
 	}
 	public func setSQL(state: inout SQLGenState) throws {
 		let (orderings, limit) = state.consumeState()
@@ -104,7 +118,7 @@ public struct JoinPivot<OAF: Codable, MasterTable: TableProtocol, MyForm: Codabl
 	public typealias OverAllForm = OAF
 	
 	public let fromTable: FromTableType
-	let to: KeyPath<OverAllForm, [Form]?>
+	let to: JoinKeyPath<OverAllForm, Form>
 	let on: KeyPath<OverAllForm, ComparisonType>
 	let equals: KeyPath<PivotTableType, ComparisonType>
 	let and: KeyPath<Form, ComparisonType2>
@@ -112,7 +126,7 @@ public struct JoinPivot<OAF: Codable, MasterTable: TableProtocol, MyForm: Codabl
 	
 	public func setState(state: inout SQLGenState) throws {
 		try fromTable.setState(state: &state)
-		try state.addTable(type: Form.self, joinData: .init(to: to, on: on, equals: equals, pivot: PivotTableType.self))
+		try state.addTable(type: Form.self, joinData: .init(to: to.get(), on: on, equals: equals, pivot: PivotTableType.self))
 		try state.addTable(type: PivotTableType.self)
 	}
 	public func setSQL(state: inout SQLGenState) throws {
